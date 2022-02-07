@@ -22,6 +22,8 @@ dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-data-r2dbc'
     implementation 'org.springframework.boot:spring-boot-starter-webflux'
     implementation "io.r2dbc:r2dbc-postgresql:${postgresR2DBCVersion}"
+    implementation "io.projectreactor:reactor-tools:${reactorToolsVersion}"
+    implementation "org.springframework.boot:spring-boot-starter-validation:${springBootVersion}"
 
     compileOnly 'org.projectlombok:lombok'
 
@@ -34,6 +36,6 @@ dependencies {
     testImplementation "io.projectreactor.tools:blockhound:${blockHoundVersion}"
 }
 
-tasks.named('test') {
+test {
     useJUnitPlatform()
 }

@@ -3,3 +3,8 @@ spring:
     url: r2dbc:postgresql://localhost:5432/postgres?schema=anime
     username: root
     password: admin12345
+logging:
+  level:
+    org:
+      springframework:
+        r2dbc: DEBUG

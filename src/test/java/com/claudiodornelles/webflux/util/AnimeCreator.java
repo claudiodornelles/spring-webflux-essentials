@@ -6,7 +6,7 @@ import java.util.UUID;
 
 public class AnimeCreator {
 
-    private static final UUID ANIME_ID_1 = UUID.fromString("cb349efc-7411-45e0-941e-4514adb14811");
+    public static final UUID ANIME_ID_1 = UUID.fromString("cb349efc-7411-45e0-941e-4514adb14811");
 
     public static Anime createAnimeToBeSaved() {
         return Anime.builder()

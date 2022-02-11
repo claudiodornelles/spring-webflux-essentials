@@ -29,7 +29,7 @@ public class AnimeController {
     private final AnimeService animeService;
 
     @GetMapping
-    public Flux<Anime> listAll() {
+    public Flux<Anime> findAll() {
         return animeService.findAll();
     }
 
@@ -40,7 +40,7 @@ public class AnimeController {
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    public Mono<Anime> add(@Valid @RequestBody Anime anime) {
+    public Mono<Anime> save(@Valid @RequestBody Anime anime) {
         return animeService.save(anime);
     }
 
@@ -52,7 +52,7 @@ public class AnimeController {
 
     @DeleteMapping("{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    public Mono<Void> update(@PathVariable UUID id) {
+    public Mono<Void> delete(@PathVariable UUID id) {
         return animeService.delete(id);
     }
 }

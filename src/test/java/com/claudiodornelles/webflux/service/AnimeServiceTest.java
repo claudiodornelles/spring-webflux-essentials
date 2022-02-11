@@ -139,7 +139,7 @@ class AnimeServiceTest {
 
         Mockito.verify(repositoryMock, Mockito.times(1))
                 .findById(AnimeCreator.ANIME_ID_1);
-        Mockito.verify(repositoryMock, Mockito.times(0))
+        Mockito.verify(repositoryMock, Mockito.never())
                 .delete(Mockito.any(Anime.class));
     }
 
@@ -174,7 +174,7 @@ class AnimeServiceTest {
 
         Mockito.verify(repositoryMock, Mockito.times(1))
                 .findById(Mockito.any(UUID.class));
-        Mockito.verify(repositoryMock, Mockito.times(0))
+        Mockito.verify(repositoryMock, Mockito.never())
                 .save(Mockito.any(Anime.class));
     }
 }

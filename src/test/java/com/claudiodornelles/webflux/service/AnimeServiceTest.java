@@ -124,6 +124,8 @@ class AnimeServiceTest {
                 .verifyComplete();
 
         Mockito.verify(repositoryMock, Mockito.times(1))
+                .findById(AnimeCreator.ANIME_ID_1);
+        Mockito.verify(repositoryMock, Mockito.times(1))
                 .delete(Mockito.any(Anime.class));
     }
 

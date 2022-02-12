@@ -14,6 +14,12 @@ public class AnimeCreator {
                 .build();
     }
 
+    public static Anime createAnimeWithEmptyName() {
+        return Anime.builder()
+                .name("")
+                .build();
+    }
+
     public static Anime createValidAnime() {
         return Anime.builder()
                 .id(ANIME_ID_1)

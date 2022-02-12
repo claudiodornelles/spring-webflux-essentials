@@ -19,6 +19,7 @@ import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
 import reactor.test.StepVerifier;
 
+import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.FutureTask;
 import java.util.concurrent.TimeUnit;
@@ -110,6 +111,39 @@ class AnimeServiceTest {
 
         Mockito.verify(repositoryMock, Mockito.times(1))
                 .save(animeToBeSaved);
+    }
+
+    @Test
+    void shouldSaveAllAnime() {
+        Anime animeToBeSaved = AnimeCreator.createAnimeToBeSaved();
+
+        Mockito.when(repositoryMock.saveAll(List.of(animeToBeSaved, animeToBeSaved)))
+                .thenReturn(Flux.just(animeToBeSaved, animeToBeSaved));
+
+        StepVerifier.create(service.saveAll(List.of(animeToBeSaved, animeToBeSaved)))
+                .expectSubscription()
+                .expectNext(animeToBeSaved, animeToBeSaved)
+                .verifyComplete();
+
+        Mockito.verify(repositoryMock, Mockito.times(1))
+                .saveAll(List.of(animeToBeSaved, animeToBeSaved));
+    }
+
+    @Test
+    void shouldFailSaveAllWhenAnimeContainsNullOrEmptyName() {
+        Anime animeToBeSaved = AnimeCreator.createAnimeToBeSaved();
+
+        Mockito.when(repositoryMock.saveAll(List.of(animeToBeSaved, animeToBeSaved.withName(""))))
+                .thenReturn(Flux.just(animeToBeSaved, animeToBeSaved.withName("")));
+
+        StepVerifier.create(service.saveAll(List.of(animeToBeSaved, animeToBeSaved.withName(""))))
+                .expectSubscription()
+                .expectNext(animeToBeSaved)
+                .expectError(ResponseStatusException.class)
+                .verify();
+
+        Mockito.verify(repositoryMock, Mockito.times(1))
+                .saveAll(List.of(animeToBeSaved, animeToBeSaved.withName("")));
     }
 
     @Test

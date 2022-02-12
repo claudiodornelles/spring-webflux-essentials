@@ -22,6 +22,7 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
 
+import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.FutureTask;
 import java.util.concurrent.TimeUnit;
@@ -157,6 +158,47 @@ class AnimeControllerIntegrationTest {
 
         Mockito.verify(repositoryMock, Mockito.times(1))
                 .save(Mockito.any(Anime.class));
+    }
+
+    @Test
+    void shouldSaveBatchAnime() {
+        Anime animeToBeSaved = AnimeCreator.createAnimeToBeSaved();
+
+        Mockito.when(repositoryMock.saveAll(Mockito.anyList()))
+                .thenReturn(Flux.just(animeToBeSaved, animeToBeSaved));
+
+        testClient.post()
+                .uri("/animes/batch")
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(BodyInserters.fromValue(List.of(animeToBeSaved, animeToBeSaved)))
+                .exchange()
+                .expectStatus().isCreated()
+                .expectBodyList(Anime.class)
+                .hasSize(2)
+                .contains(animeToBeSaved);
+
+        Mockito.verify(repositoryMock, Mockito.times(1))
+                .saveAll(Mockito.anyList());
+    }
+
+    @Test
+    void shouldFailSaveBatchWhenAnimeContainsNullOrEmptyName() {
+        Anime animeToBeSaved = AnimeCreator.createAnimeToBeSaved();
+
+        Mockito.when(repositoryMock.saveAll(Mockito.anyList()))
+                .thenReturn(Flux.just(animeToBeSaved, animeToBeSaved.withName("")));
+
+        testClient.post()
+                .uri("/animes/batch")
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(BodyInserters.fromValue(List.of(animeToBeSaved, animeToBeSaved.withName(""))))
+                .exchange()
+                .expectStatus().isBadRequest()
+                .expectBody()
+                .jsonPath("$.status").isEqualTo(400);
+
+        Mockito.verify(repositoryMock, Mockito.times(1))
+                .saveAll(Mockito.anyList());
     }
 
     @Test

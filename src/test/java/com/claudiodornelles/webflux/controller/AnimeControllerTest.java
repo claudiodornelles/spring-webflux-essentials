@@ -18,6 +18,7 @@ import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
 import reactor.test.StepVerifier;
 
+import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.FutureTask;
 import java.util.concurrent.TimeUnit;
@@ -98,6 +99,22 @@ class AnimeControllerTest {
 
         Mockito.verify(serviceMock, Mockito.times(1))
                 .save(animeToBeSaved);
+    }
+
+    @Test
+    void shouldSaveBatchAnime() {
+        Anime animeToBeSaved = AnimeCreator.createAnimeToBeSaved();
+
+        Mockito.when(serviceMock.saveAll(List.of(animeToBeSaved, animeToBeSaved)))
+                .thenReturn(Flux.just(animeToBeSaved, animeToBeSaved));
+
+        StepVerifier.create(controller.saveBatch(List.of(animeToBeSaved, animeToBeSaved)))
+                .expectSubscription()
+                .expectNext(animeToBeSaved, animeToBeSaved)
+                .verifyComplete();
+
+        Mockito.verify(serviceMock, Mockito.times(1))
+                .saveAll(List.of(animeToBeSaved, animeToBeSaved));
     }
 
     @Test

@@ -1,6 +1,8 @@
 package com.claudiodornelles.webflux.service;
 
 import com.claudiodornelles.webflux.domain.Anime;
+import com.claudiodornelles.webflux.exception.NotFoundException;
+import com.claudiodornelles.webflux.exception.ServiceValidationException;
 import com.claudiodornelles.webflux.repository.AnimeRepository;
 import com.claudiodornelles.webflux.util.AnimeCreator;
 import org.junit.jupiter.api.Assertions;
@@ -11,7 +13,6 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
-import org.springframework.web.server.ResponseStatusException;
 import reactor.blockhound.BlockHound;
 import reactor.blockhound.BlockingOperationError;
 import reactor.core.publisher.Flux;
@@ -43,7 +44,7 @@ class AnimeServiceTest {
     @Test
     void blockHoundWorks() {
         try {
-            FutureTask<?> task = new FutureTask<>(
+            var task = new FutureTask<>(
                     () -> {
                         Thread.sleep(0);
                         return "";
@@ -88,18 +89,27 @@ class AnimeServiceTest {
 
     @Test
     void shouldFailFindByIdWhenAnimeDoesNotExist() {
+        var randomId = UUID.randomUUID();
+
         Mockito.when(repositoryMock.findById(Mockito.any(UUID.class)))
                 .thenReturn(Mono.empty());
 
-        StepVerifier.create(service.findById(UUID.randomUUID()))
+        StepVerifier.create(service.findById(randomId))
                 .expectSubscription()
-                .expectError(ResponseStatusException.class)
+                .expectErrorMatches(error -> error instanceof NotFoundException
+                && error.getMessage().equals("could not find anime with id " + randomId))
                 .verify();
     }
 
     @Test
+    void shouldThrowExceptionWhenTryingToFindByANullId() {
+        var exception = Assertions.assertThrows(ServiceValidationException.class, () -> service.findById(null));
+        Assertions.assertEquals("id should not be null", exception.getMessage());
+    }
+
+    @Test
     void shouldSaveAnime() {
-        Anime animeToBeSaved = AnimeCreator.createAnimeToBeSaved();
+        var animeToBeSaved = AnimeCreator.createAnimeToBeSaved();
 
         Mockito.when(repositoryMock.save(animeToBeSaved))
                 .thenReturn(Mono.just(animeToBeSaved));
@@ -115,7 +125,7 @@ class AnimeServiceTest {
 
     @Test
     void shouldSaveAllAnime() {
-        Anime animeToBeSaved = AnimeCreator.createAnimeToBeSaved();
+        var animeToBeSaved = AnimeCreator.createAnimeToBeSaved();
 
         Mockito.when(repositoryMock.saveAll(List.of(animeToBeSaved, animeToBeSaved)))
                 .thenReturn(Flux.just(animeToBeSaved, animeToBeSaved));
@@ -131,19 +141,15 @@ class AnimeServiceTest {
 
     @Test
     void shouldFailSaveAllWhenAnimeContainsNullOrEmptyName() {
-        Anime animeToBeSaved = AnimeCreator.createAnimeToBeSaved();
+        var animeToBeSaved = AnimeCreator.createAnimeToBeSaved();
+        var animesToBeSaved = List.of(animeToBeSaved, animeToBeSaved.withName(""));
 
-        Mockito.when(repositoryMock.saveAll(List.of(animeToBeSaved, animeToBeSaved.withName(""))))
-                .thenReturn(Flux.just(animeToBeSaved, animeToBeSaved.withName("")));
+        var exception = Assertions.assertThrows(ServiceValidationException.class, () -> service.saveAll(animesToBeSaved));
 
-        StepVerifier.create(service.saveAll(List.of(animeToBeSaved, animeToBeSaved.withName(""))))
-                .expectSubscription()
-                .expectNext(animeToBeSaved)
-                .expectError(ResponseStatusException.class)
-                .verify();
+        Assertions.assertEquals("name cannot be empty", exception.getMessage());
 
-        Mockito.verify(repositoryMock, Mockito.times(1))
-                .saveAll(List.of(animeToBeSaved, animeToBeSaved.withName("")));
+        Mockito.verify(repositoryMock, Mockito.never())
+                .saveAll(Mockito.anyList());
     }
 
     @Test
@@ -170,7 +176,8 @@ class AnimeServiceTest {
 
         StepVerifier.create(service.delete(AnimeCreator.ANIME_ID_1))
                 .expectSubscription()
-                .expectError(ResponseStatusException.class)
+                .expectErrorMatches(error -> error instanceof NotFoundException
+                && error.getMessage().equals("could not find anime with id " + AnimeCreator.ANIME_ID_1))
                 .verify();
 
         Mockito.verify(repositoryMock, Mockito.times(1))
@@ -181,7 +188,7 @@ class AnimeServiceTest {
 
     @Test
     void shouldUpdateAnime() {
-        Anime validUpdatedAnime = AnimeCreator.createValidUpdatedAnime();
+        var validUpdatedAnime = AnimeCreator.createValidUpdatedAnime();
 
         Mockito.when(repositoryMock.findById(AnimeCreator.ANIME_ID_1))
                 .thenReturn(Mono.just(validUpdatedAnime));
@@ -205,7 +212,8 @@ class AnimeServiceTest {
 
         StepVerifier.create(service.update(AnimeCreator.createValidUpdatedAnime()))
                 .expectSubscription()
-                .expectError(ResponseStatusException.class)
+                .expectErrorMatches(error -> error instanceof NotFoundException
+                && error.getMessage().equals("could not find anime with id " + AnimeCreator.ANIME_ID_1))
                 .verify();
 
         Mockito.verify(repositoryMock, Mockito.times(1))

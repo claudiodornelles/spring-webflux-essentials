@@ -17,7 +17,6 @@ import org.springframework.web.reactive.function.server.ServerRequest;
 import org.springframework.web.reactive.function.server.ServerResponse;
 import reactor.core.publisher.Mono;
 
-import java.util.Map;
 import java.util.Optional;
 
 @Order(-2)
@@ -38,8 +37,11 @@ public class GlobalExceptionHandler extends AbstractErrorWebExceptionHandler {
     }
 
     private Mono<ServerResponse> formatErrorResponse(ServerRequest request) {
-        Map<String, Object> errorAttributes = getErrorAttributes(request, ErrorAttributeOptions.defaults());
-        int status = (int) Optional.ofNullable(errorAttributes.get("status"))
+        var errorAttributes = getErrorAttributes(request, ErrorAttributeOptions.defaults());
+        errorAttributes.remove("path");
+        errorAttributes.remove("requestId");
+
+        var status = (int) Optional.ofNullable(errorAttributes.get("status"))
                 .orElse(500);
         return ServerResponse.status(status)
                 .contentType(MediaType.APPLICATION_JSON)

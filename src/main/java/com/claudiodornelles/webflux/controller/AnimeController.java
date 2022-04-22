@@ -17,7 +17,6 @@ import org.springframework.web.bind.annotation.RestController;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
-import javax.validation.Valid;
 import java.util.List;
 import java.util.UUID;
 
@@ -41,7 +40,7 @@ public class AnimeController {
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    public Mono<Anime> save(@Valid @RequestBody Anime anime) {
+    public Mono<Anime> save(@RequestBody Anime anime) {
         return animeService.save(anime);
     }
 
@@ -53,7 +52,7 @@ public class AnimeController {
 
     @PutMapping("{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    public Mono<Void> update(@PathVariable UUID id, @Valid @RequestBody Anime anime) {
+    public Mono<Void> update(@PathVariable UUID id, @RequestBody Anime anime) {
         return animeService.update(anime.withId(id));
     }
 

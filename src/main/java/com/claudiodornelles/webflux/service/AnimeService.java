@@ -1,25 +1,28 @@
 package com.claudiodornelles.webflux.service;
 
 import com.claudiodornelles.webflux.domain.Anime;
-import com.claudiodornelles.webflux.mapper.ResponseMapper;
+import com.claudiodornelles.webflux.exception.NotFoundException;
+import com.claudiodornelles.webflux.exception.ServiceValidationException;
 import com.claudiodornelles.webflux.repository.AnimeRepository;
-import io.netty.util.internal.StringUtil;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.server.ResponseStatusException;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
+import javax.validation.ConstraintViolation;
+import javax.validation.Validation;
+import javax.validation.Validator;
+import javax.validation.ValidatorFactory;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
 public class AnimeService {
 
-    private static final String RESOURCE = "Anime";
     private final AnimeRepository animeRepository;
 
     public Flux<Anime> findAll() {
@@ -27,28 +30,32 @@ public class AnimeService {
     }
 
     public Mono<Anime> findById(UUID id) {
+        if (id == null) {
+            throw new ServiceValidationException("id should not be null");
+        }
         return animeRepository.findById(id)
-                .switchIfEmpty(ResponseMapper.statusNotFound(RESOURCE));
+                .switchIfEmpty(Mono.error(new NotFoundException("could not find anime with id " + id)));
     }
 
+    @Transactional
     public Mono<Anime> save(Anime anime) {
-        return animeRepository.save(anime);
+        return Mono.just(validateBeanAttributes(anime))
+                .flatMap(animeRepository::save);
     }
 
     @Transactional
     public Flux<Anime> saveAll(List<Anime> animes) {
-        return animeRepository.saveAll(animes)
-                .doOnNext(this::throwResponseStatusExceptionWhenEmptyName);
-    }
-
-    private void throwResponseStatusExceptionWhenEmptyName(Anime anime) {
-        if (StringUtil.isNullOrEmpty(anime.getName())) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid Name");
-        }
-
+        return animeRepository.saveAll(
+                animes.stream()
+                        .map(this::validateBeanAttributes)
+                        .collect(Collectors.toList())
+        );
     }
 
     public Mono<Void> update(Anime anime) {
+        if (anime.getId() == null) {
+            throw new ServiceValidationException("id should not be null");
+        }
         return findById(anime.getId())
                 .map(entityFound -> anime)
                 .flatMap(animeRepository::save)
@@ -59,5 +66,16 @@ public class AnimeService {
         return findById(id)
                 .flatMap(animeRepository::delete)
                 .then();
+    }
+
+    private <T> T validateBeanAttributes(T bean) {
+        try (ValidatorFactory factory = Validation.buildDefaultValidatorFactory()) {
+            Validator validator = factory.getValidator();
+            Set<ConstraintViolation<T>> violations = validator.validate(bean);
+            if (!violations.isEmpty()) {
+                throw new ServiceValidationException(violations.iterator().next().getMessage());
+            }
+        }
+        return bean;
     }
 }
